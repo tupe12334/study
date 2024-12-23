@@ -75,8 +75,8 @@
               await renderTree(li, file.path, recursive); // Load recursively
             }
           } else {
-            // Create a link to open the file in a new tab
-            li.innerHTML = `<a class="file" href="${file.html_url}" target="_blank">${file.name}</a>`;
+            // Create a link to download the file
+            li.innerHTML = `<a class="file" href="${file.download_url}" download="${file.name}">${file.name}</a>`;
           }
 
           ul.appendChild(li);
