@@ -83,13 +83,10 @@
         }
       }
 
-      // Initialize the file browser
+      // Initialize the file browser with recursive loading disabled by default
       document.addEventListener("DOMContentLoaded", () => {
         const container = document.getElementById("file-browser");
-        const recursive = confirm(
-          "Would you like to load all subfolders recursively?"
-        );
-        renderTree(container, "", recursive);
+        renderTree(container, "", false);
       });
     </script>
   </body>
