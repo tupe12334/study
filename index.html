@@ -3,9 +3,81 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>Dynamic File Explorer</title>
+    <style>
+      ul {
+        list-style-type: none;
+      }
+      .folder {
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .folder ul {
+        display: none;
+        margin-left: 20px;
+      }
+      .folder.open ul {
+        display: block;
+      }
+      .file {
+        margin-left: 20px;
+      }
+    </style>
   </head>
   <body>
-    sdaf
+    <h1>Dynamic File Explorer</h1>
+    <div id="file-explorer">Loading...</div>
+
+    <script>
+      async function fetchFolderStructure() {
+        try {
+          const response = await fetch("folder_structure.json"); // Replace with your JSON file path
+          return await response.json();
+        } catch (error) {
+          console.error("Error fetching folder structure:", error);
+          return null;
+        }
+      }
+
+      function createExplorer(data) {
+        if (data.type === "folder") {
+          const folder = document.createElement("div");
+          folder.className = "folder";
+          folder.textContent = data.name;
+
+          const ul = document.createElement("ul");
+          data.children.forEach((child) => {
+            const li = document.createElement("li");
+            li.appendChild(createExplorer(child));
+            ul.appendChild(li);
+          });
+
+          folder.appendChild(ul);
+          folder.addEventListener("click", () => {
+            folder.classList.toggle("open");
+          });
+          return folder;
+        } else {
+          const file = document.createElement("div");
+          file.className = "file";
+          file.textContent = data.name;
+          return file;
+        }
+      }
+
+      async function initFileExplorer() {
+        const folderStructure = await fetchFolderStructure();
+        if (folderStructure) {
+          const explorer = createExplorer(folderStructure);
+          document.getElementById("file-explorer").innerHTML = "";
+          document.getElementById("file-explorer").appendChild(explorer);
+        } else {
+          document.getElementById("file-explorer").textContent =
+            "Failed to load folder structure.";
+        }
+      }
+
+      initFileExplorer();
+    </script>
   </body>
 </html>
