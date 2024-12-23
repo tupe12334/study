@@ -3,81 +3,94 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dynamic File Explorer</title>
+    <title>GitHub File Browser</title>
     <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
       ul {
         list-style-type: none;
+        padding-left: 20px;
+      }
+      li {
+        margin: 5px 0;
       }
       .folder {
-        font-weight: bold;
         cursor: pointer;
-      }
-      .folder ul {
-        display: none;
-        margin-left: 20px;
-      }
-      .folder.open ul {
-        display: block;
+        font-weight: bold;
       }
       .file {
         margin-left: 20px;
       }
+      .folder:before {
+        content: "📂 ";
+      }
+      .file:before {
+        content: "📄 ";
+      }
     </style>
   </head>
   <body>
-    <h1>Dynamic File Explorer</h1>
-    <div id="file-explorer">Loading...</div>
+    <h1>GitHub File Browser</h1>
+    <div id="file-browser"></div>
 
     <script>
-      async function fetchFolderStructure() {
-        try {
-          const response = await fetch("folder_structure.json"); // Replace with your JSON file path
-          return await response.json();
-        } catch (error) {
-          console.error("Error fetching folder structure:", error);
-          return null;
+      const repoOwner = "tupe12334";
+      const repoName = "study";
+
+      async function fetchFileStructure(path = "") {
+        const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+          document.getElementById("file-browser").textContent =
+            "Failed to load repository contents.";
+          return [];
+        }
+        return response.json();
+      }
+
+      async function renderTree(container, path = "", recursive = false) {
+        const files = await fetchFileStructure(path);
+
+        const ul = document.createElement("ul");
+        container.appendChild(ul);
+
+        for (const file of files) {
+          const li = document.createElement("li");
+
+          if (file.type === "dir") {
+            li.innerHTML = `<span class="folder">${file.name}</span>`;
+            li.addEventListener("click", async (event) => {
+              event.stopPropagation(); // Prevent event bubbling
+              const existingUl = li.querySelector("ul");
+              if (existingUl) {
+                existingUl.remove(); // Collapse the folder
+              } else {
+                // Expand the folder and optionally load recursively
+                await renderTree(li, file.path, recursive);
+              }
+            });
+
+            if (recursive) {
+              await renderTree(li, file.path, recursive); // Load recursively
+            }
+          } else {
+            // Create a link to open the file in a new tab
+            li.innerHTML = `<a class="file" href="${file.html_url}" target="_blank">${file.name}</a>`;
+          }
+
+          ul.appendChild(li);
         }
       }
 
-      function createExplorer(data) {
-        if (data.type === "folder") {
-          const folder = document.createElement("div");
-          folder.className = "folder";
-          folder.textContent = data.name;
-
-          const ul = document.createElement("ul");
-          data.children.forEach((child) => {
-            const li = document.createElement("li");
-            li.appendChild(createExplorer(child));
-            ul.appendChild(li);
-          });
-
-          folder.appendChild(ul);
-          folder.addEventListener("click", () => {
-            folder.classList.toggle("open");
-          });
-          return folder;
-        } else {
-          const file = document.createElement("div");
-          file.className = "file";
-          file.textContent = data.name;
-          return file;
-        }
-      }
-
-      async function initFileExplorer() {
-        const folderStructure = await fetchFolderStructure();
-        if (folderStructure) {
-          const explorer = createExplorer(folderStructure);
-          document.getElementById("file-explorer").innerHTML = "";
-          document.getElementById("file-explorer").appendChild(explorer);
-        } else {
-          document.getElementById("file-explorer").textContent =
-            "Failed to load folder structure.";
-        }
-      }
-
-      initFileExplorer();
+      // Initialize the file browser
+      document.addEventListener("DOMContentLoaded", () => {
+        const container = document.getElementById("file-browser");
+        const recursive = confirm(
+          "Would you like to load all subfolders recursively?"
+        );
+        renderTree(container, "", recursive);
+      });
     </script>
   </body>
 </html>
